@@ -126,8 +126,9 @@ div.exampleHeader { font-weight: bold;
                      (<code>xs:string</code>) and a <code>content</code> key
                      (<code>xs:string</code>). Known role values are
                   <code>system</code>, <code>user</code>, <code>assistant</code>, and
-                     <code>tool</code>. Any other role value is passed through to the backend
-                  unchanged.</p></li><li><p><code>array(*)</code> whose members are message maps as described above &#8212; the
+                     <code>tool</code>. The handling of any other role value is
+                  implementation-defined; an implementation MAY map an unrecognised role to
+                     <code>user</code>.</p></li><li><p><code>array(*)</code> whose members are message maps as described above &#8212; the
                   array is auto-expanded into individual message items. This allows a
                      <code>?messages</code> array from a prior <code>ai:chat</code> call to be
                   spliced directly into the next call's sequence without further processing.</p></li></ul><p>A <code>tool</code>-role message map additionally carries a <code>tool_call_id</code>
