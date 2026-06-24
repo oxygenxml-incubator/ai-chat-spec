@@ -1,0 +1,240 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang=""><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <title>AI Module</title><style type="text/css">
+code           { font-family: monospace; }
+
+div.constraint,
+div.issue,
+div.note,
+div.notice     { margin-left: 2em; }
+
+ol.enumar      { list-style-type: decimal; }
+ol.enumla      { list-style-type: lower-alpha; }
+ol.enumlr      { list-style-type: lower-roman; }
+ol.enumua      { list-style-type: upper-alpha; }
+ol.enumur      { list-style-type: upper-roman; }
+
+
+div.exampleInner pre { margin-left: 1em;
+                       margin-top: 0em; margin-bottom: 0em}
+div.exampleOuter {border: 4px double gray;
+                  margin: 0em; padding: 0em}
+div.exampleInner { background-color: #d5dee3;
+                   border-top-width: 4px;
+                   border-top-style: double;
+                   border-top-color: #d3d3d3;
+                   border-bottom-width: 4px;
+                   border-bottom-style: double;
+                   border-bottom-color: #d3d3d3;
+                   padding: 4px; margin: 0em }
+div.exampleWrapper { margin: 4px }
+div.exampleHeader { font-weight: bold;
+                    margin: 4px}
+</style><link rel="stylesheet" type="text/css" href="http://www.w3.org/StyleSheets/TR/base.css"></head><body><div class="head">
+<h1><a name="title" id="title"></a>AI Module</h1>
+<h2><a name="w3c-doctype" id="w3c-doctype"></a>EXPath Candidate Module 1 June 2026</h2><dl><dt>This version:</dt><dd>
+         <a href="http://expath.org/spec/ai/20260601">http://expath.org/spec/ai/20260601</a>
+      </dd><dt>Latest version:</dt><dd>
+         <a href="http://expath.org/spec/ai">http://expath.org/spec/ai</a>
+      </dd><dt>Editor:</dt><dd>George Bina, Syncro Soft / oXygen XML Editor</dd></dl><p>This document is also available in these non-normative formats: <a href="http://expath.org/spec/ai/20260601.xml">XML</a>.</p><p class="copyright"></p></div><hr><div>
+<h2><a name="abstract" id="abstract"></a>Abstract</h2><p>This proposal defines an XPath 3.1 extension function for invoking AI language
+            models. It defines a generic chat-completion function (<code>ai:chat</code>) that sends
+            a conversation to an AI backend and returns the response together with the full
+            conversation history, so multi-turn workflows are possible. The module is designed to
+            be compatible with XSLT 3.0, XQuery 3.1, Schematron, SQF, XProc 3.0, and any other XPath
+            3.1 host language, and to be independent of any specific AI provider.</p></div><div>
+<h2><a name="status" id="status"></a>Status of this Document</h2><p><strong>This document is an editors' copy that has
+        no official standing.</strong></p><p>This is an early-stage community proposal. The function signatures and behaviour
+            described here reflect a working implementation in the Oxygen AI Positron add-on. Feedback
+            and alternative proposals are welcome.</p></div><div class="toc">
+<h2><a name="contents" id="contents"></a>Table of Contents</h2><p class="toc">1 <a href="#intro">Introduction</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.1 <a href="#intro-ns">Namespace conventions</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.2 <a href="#intro-errors">Error management</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.3 <a href="#intro-design">Design goals</a><br>
+2 <a href="#messages">Message Format</a><br>
+3 <a href="#chat">The ai:chat Function</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.1 <a href="#chat-signature">Signature</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.2 <a href="#chat-params">Parameters</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3.2.1 <a href="#chat-param-messages">$messages</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3.2.2 <a href="#chat-param-opts">$opts</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.3 <a href="#chat-return">Return Value</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.4 <a href="#chat-tools">Tool and Function Calling</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.5 <a href="#chat-examples">Examples</a><br>
+4 <a href="#conformance">Conformance</a><br>
+</p>
+<h3><a name="appendices" id="appendices"></a>Appendix</h3><p class="toc">A <a href="#references">References</a><br>
+</p></div><hr><div class="body"><div class="div1">
+<h2><a name="intro" id="intro"></a>1 Introduction</h2><p>AI language models are increasingly useful inside XML processing pipelines, for
+            generating content, checking meaning, summarising documents, and making decisions that
+            require natural-language understanding. This specification defines a minimal, portable
+            XPath 3.1 API that exposes chat-completion capabilities without tying author code to any
+            specific AI provider or tool.</p><p>The design follows the same philosophy as other EXPath modules: define a stable
+            namespace, a small set of well-typed functions, and leave implementation details
+            (connector configuration, model selection, authentication) to the host environment. An
+            XSLT stylesheet or Schematron schema that calls <code>ai:chat</code> should run
+            unchanged on any conforming XPath processor, regardless of the AI backend configured
+            behind it.</p><div class="div2">
+<h3><a name="intro-ns" id="intro-ns"></a>1.1 Namespace conventions</h3><p>The module defined by this document defines functions in the namespace
+                  <code>http://expath.org/ns/ai</code>. In this document, the <code>ai</code>
+               prefix, when used, is bound to this namespace URI.</p><p>Error codes are defined in the namespace <code>http://expath.org/ns/error</code>. In
+               this document, the <code>err</code> prefix, when used, is bound to this namespace
+               URI.</p><p>Example namespace declaration for XSLT:</p><div class="exampleInner"><pre>xmlns:ai="http://expath.org/ns/ai"</pre></div></div><div class="div2">
+<h3><a name="intro-errors" id="intro-errors"></a>1.2 Error management</h3><p>Error conditions are identified by a QName in the
+                  <code>http://expath.org/ns/error</code> namespace. When an error condition is
+               reached, a dynamic error is raised with the corresponding error code. The
+               <code>ai:chat</code> function additionally supports a non-throwing error mode
+               controlled by the <code>on-error</code> option key (see ).</p><p>Defined error codes:</p><ul><li><p><code>err:AI001</code> &#8212; The AI backend returned an error or was unreachable.
+                     Raised when <code>on-error</code> is <code>'throw'</code> (the default).</p></li><li><p><code>err:AI002</code> &#8212; A message item in <code>$messages</code> has an
+                     unsupported XPath type (not an <code>xs:string</code>, <code>map(*)</code>,
+                     or <code>array(*)</code>).</p></li><li><p><code>err:AI003</code> &#8212; An option key in <code>$opts</code> has a value of
+                     the wrong type.</p></li><li><p><code>err:AI004</code> &#8212; The requested model is not available in the current
+                     environment.</p></li></ul></div><div class="div2">
+<h3><a name="intro-design" id="intro-design"></a>1.3 Design goals</h3><ul><li><p><em>Provider independence.</em> The functions do not expose provider-specific
+                     parameters in the type signature. Provider selection and authentication are
+                     environment configuration, not author code.</p></li><li><p><em>Composability.</em> The <code>?messages</code> array returned by
+                        <code>ai:chat</code> can be passed directly as part of the next call's
+                        <code>$messages</code> sequence, so multi-turn conversations
+                     need no external state.</p></li><li><p><em>Minimal surface area.</em> A single function covers all common AI
+                     integration patterns. Authors who only need a single-turn string result can
+                     call <code>ai:chat('prompt')?response</code>, while authors building
+                     multi-turn pipelines use the full map.</p></li></ul></div></div><div class="div1">
+<h2><a name="messages" id="messages"></a>2 Message Format</h2><p>Both functions accept a sequence of <em>message items</em>. A message item is one
+            of the following:</p><ul><li><p><code>xs:string</code> &#8212; treated as a <code>user</code> message. The string value
+                  becomes the <code>content</code> of the message.</p></li><li><p><code>map(*)</code> with at least a <code>role</code> key
+                     (<code>xs:string</code>) and a <code>content</code> key
+                     (<code>xs:string</code>). Known role values are
+                  <code>system</code>, <code>user</code>, <code>assistant</code>, and
+                     <code>tool</code>. Any other role value is passed through to the backend
+                  unchanged.</p></li><li><p><code>array(*)</code> whose members are message maps as described above &#8212; the
+                  array is auto-expanded into individual message items. This allows a
+                     <code>?messages</code> array from a prior <code>ai:chat</code> call to be
+                  spliced directly into the next call's sequence without further processing.</p></li></ul><p>A <code>tool</code>-role message map additionally carries a <code>tool_call_id</code>
+            key (<code>xs:string</code>) identifying the preceding tool-call turn it answers.
+            An <code>assistant</code>-role map that initiated tool calls carries a
+               <code>tool_calls</code> key containing the serialised JSON from the model response.
+            Both extra keys are preserved transparently when the <code>?messages</code> array is
+            passed to a subsequent <code>ai:chat</code> call.</p></div><div class="div1">
+<h2><a name="chat" id="chat"></a>3 The <code>ai:chat</code> Function</h2><p>Sends a conversation to the AI backend and returns a map containing the assistant reply
+            and the full updated conversation history.</p><div class="div2">
+<h3><a name="chat-signature" id="chat-signature"></a>3.1 Signature</h3><div class="exampleInner"><pre>ai:chat($messages as item()*, $opts as map(*)?) as map(*)</pre></div></div><div class="div2">
+<h3><a name="chat-params" id="chat-params"></a>3.2 Parameters</h3><div class="div3">
+<h4><a name="chat-param-messages" id="chat-param-messages"></a>3.2.1 <code>$messages</code></h4><p>One or more message items (see <a href="#messages"><b>2 Message Format</b></a>) forming the conversation
+                  to send. The sequence must contain at least one item. The items are assembled into
+                  an ordered message list before the call is dispatched: arrays are expanded
+                  in-place, strings become <code>user</code> maps. The ordering and composition of
+                  messages are forwarded to the backend as-is; sequence constraints (such as which
+                  role may appear last) are backend-specific and reported via
+                  <code>err:AI001</code>.</p></div><div class="div3">
+<h4><a name="chat-param-opts" id="chat-param-opts"></a>3.2.2 <code>$opts</code></h4><p>An optional map of call-level settings. All keys are optional. Unknown keys are
+                  silently ignored or reported in <code>?warnings</code> at implementation
+                  discretion. Recognised keys:</p><ul><li><p><code>model</code> (<code>xs:string</code>) &#8212; The model or engine
+                        identifier to use for this call, overriding the environment default.</p></li><li><p><code>temperature</code> (<code>xs:double</code>) &#8212; Sampling temperature in
+                        the range 0&#8211;2. Higher values produce more varied output.</p></li><li><p><code>max-tokens</code> (<code>xs:integer</code>) &#8212; Maximum number of
+                        tokens in the completion.</p></li><li><p><code>max-completion-tokens</code> (<code>xs:integer</code>) &#8212; Maximum
+                        tokens including reasoning tokens, for models that perform explicit
+                        reasoning before responding.</p></li><li><p><code>reasoning-effort</code> (<code>xs:string</code>) &#8212; Hints the amount
+                        of reasoning the model should perform. Recognised values:
+                           <code>'low'</code>, <code>'medium'</code>, <code>'high'</code>.</p></li><li><p><code>stop</code> (<code>xs:string*</code> or <code>array(xs:string)</code>)
+                        &#8212; Up to four stop sequences. The model stops generating when any stop
+                        sequence appears in the output.</p></li><li><p><code>cache</code> (<code>xs:boolean</code>) &#8212; When <code>true()</code>
+                        (the default), the implementation may return a cached result for an
+                        identical prior call, avoiding redundant API round-trips.</p></li><li><p><code>on-error</code> (<code>xs:string</code>) &#8212; Controls error handling.
+                        <code>'throw'</code> (default) raises a dynamic error (<code>err:AI001</code>)
+                        on failure. <code>'return'</code> suppresses the dynamic error; the
+                        returned map instead carries an <code>error</code> key with a description
+                        of the failure.</p></li><li><p><code>tools</code> (<code>xs:string?</code>) &#8212; Full tool definitions available
+                        to the model for this call, serialised as a JSON string.</p></li></ul></div></div><div class="div2">
+<h3><a name="chat-return" id="chat-return"></a>3.3 Return Value</h3><p>The function returns a <code>map(*)</code> with the following keys:</p><ul><li><p><code>response</code> (<code>xs:string?</code>) &#8212; The final assistant reply as
+                     a plain string. Absent when an error occurred and <code>on-error</code> is
+                        <code>'return'</code>.</p></li><li><p><code>messages</code> (<code>array(map(*))</code>) &#8212; The complete conversation
+                     history after this call: all input messages plus the assistant reply appended.
+                     Each member is a message map with at minimum <code>role</code> and
+                        <code>content</code> keys. This array may be passed directly as part of the
+                        <code>$messages</code> sequence of a subsequent <code>ai:chat</code> call
+                     to continue the conversation.</p></li><li><p><code>error</code> (<code>xs:string?</code>) &#8212; Present only when
+                        <code>on-error</code> is <code>'return'</code> and the call failed.
+                     Contains a human-readable description of the failure.</p></li><li><p><code>warnings</code> (<code>array(xs:string)</code>) &#8212; Zero or more
+                     non-fatal diagnostic messages produced during the call. Absent when
+                     empty.</p></li></ul></div><div class="div2">
+<h3><a name="chat-tools" id="chat-tools"></a>3.4 Tool and Function Calling</h3><p>The <code>$opts?tools</code> key enables the model to invoke caller-defined
+               functions during the conversation. Its value is a JSON string containing an array
+               of tool definitions. Each definition follows the structure:</p><div class="exampleInner"><pre>[{
+  "type": "function",
+  "function": {
+    "name": "get_document_content",
+    "description": "Read content from a file or URL.",
+    "parameters": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "docURL":     { "type": "string" },
+        "start_line": { "type": "integer" },
+        "end_line":   { "type": "integer" }
+      },
+      "required": ["docURL", "start_line", "end_line"]
+    }
+  }
+}]</pre></div><p>The <code>parameters</code> object is a JSON Schema (2020-12) object describing
+               the arguments the model must supply when invoking the tool.</p><p>The <code>tools</code> value MUST be a list of full tool definitions as shown above
+               (each an object with a <code>function</code> name). A <code>tools</code> value that is
+               not a valid list of full tool definitions is ignored and reported in
+               <code>warnings</code> rather than raising an error.</p><p>When tools are provided, the implementation MUST execute the following loop
+               transparently on behalf of the caller:</p><ol class="enumar"><li><p>Submit the conversation (including tool definitions) to the model.</p></li><li><p>If the model returns a tool-call request, execute the named tool with the
+                  supplied arguments.</p></li><li><p>Append the tool result as a <code>tool</code>-role message and re-submit
+                  the conversation.</p></li><li><p>Repeat until the model returns a final text response.</p></li></ol><p>From the XPath author's perspective, this loop is a single <code>ai:chat</code>
+               call returning a single map. The <code>?response</code> key holds the final text
+               response. All intermediate tool-call and tool-result turns are preserved in the
+               <code>?messages</code> array, making the full reasoning trace available for
+               logging or inspection.</p><p>Tool calling bridges both integration directions: an <code>ai:chat</code> call
+               equipped with XML-tool definitions (XSLT, Schematron, XProc) represents AI
+               orchestrating XML tools from within an XML pipeline, with both directions active in
+               a single function call.</p></div><div class="div2">
+<h3><a name="chat-examples" id="chat-examples"></a>3.5 Examples</h3><p>Single-turn, plain-string result:</p><div class="exampleInner"><pre>ai:chat('What is a DITA shortdesc?')?response</pre></div><p>With explicit system prompt:</p><div class="exampleInner"><pre>ai:chat((
+  map{'role': 'system', 'content': 'You are a DITA expert.'},
+  'What is a shortdesc?'
+))?response</pre></div><p>Multi-turn (the <code>?messages</code> array is auto-expanded):</p><div class="exampleInner"><pre>let $r1 := ai:chat('What is a shortdesc?')
+let $r2 := ai:chat(($r1?messages, 'Give me an example.'))
+return $r2?response</pre></div><p>With options (specific model and non-throwing error handling):</p><div class="exampleInner"><pre>let $r := ai:chat(
+  (map{'role':'system','content':'You are a DITA expert.'}, 'What is a shortdesc?'),
+  map{'model':'gpt-4o', 'on-error':'return'}
+)
+return if (map:contains($r, 'error'))
+       then 'Error: ' || $r?error
+       else $r?response</pre></div><p>Use inside an XSLT template to generate a short description:</p><div class="exampleInner"><pre>&lt;xsl:value-of select="
+  ai:chat('Generate a DITA shortdesc element for: ' || .)?response"/&gt;</pre></div><p>Use inside a Schematron rule to perform a semantic check:</p><div class="exampleInner"><pre>&lt;sch:assert test="
+  ai:chat('Does this short description accurately summarise the following topic? '
+          || .. || ' Shortdesc: ' || .
+          || ' Answer yes or no.')?response = 'yes'"&gt;
+  Short description may not match the topic.
+&lt;/sch:assert&gt;</pre></div></div></div><div class="div1">
+<h2><a name="conformance" id="conformance"></a>4 Conformance</h2><p>A conforming implementation of this module:</p><ul><li><p>MUST bind the prefix <code>ai</code> to the namespace URI
+                     <code>http://expath.org/ns/ai</code> and make the function
+                     <code>ai:chat</code> available under that namespace.</p></li><li><p>MUST accept all message item types described in <a href="#messages"><b>2 Message Format</b></a> and
+                  raise <code>err:AI002</code> for items of an unsupported XPath type.</p></li><li><p>MUST return a map with at minimum the <code>response</code> and
+                     <code>messages</code> keys on a successful call.</p></li><li><p>MUST raise <code>err:AI001</code> on an AI backend failure when
+                     <code>on-error</code> is <code>'throw'</code>, and MUST return the
+                     <code>error</code> key instead when <code>on-error</code> is
+                     <code>'return'</code>.</p></li><li><p>MUST normalise <code>$messages</code> items before dispatching: expand
+                  <code>array(*)</code> items into their individual member maps, and convert
+                  <code>xs:string</code> items into <code>user</code>-role message maps.</p></li><li><p>MAY support additional <code>$opts</code> keys beyond those specified here,
+                  provided they do not conflict with the defined keys.</p></li><li><p>MAY connect to any AI backend; the choice of backend and its configuration is
+                  outside the scope of this specification.</p></li></ul></div></div><div class="back"><div class="div1">
+<h2><a name="references" id="references"></a>A References</h2><dl><dt class="label"><a name="expath-http" id="expath-http"></a>EXPath HTTP</dt><dd>
+               <a href="http://expath.org/spec/http-client">HTTP Client Module &#8212; EXPath Candidate Module</a>
+            </dd><dt class="label"><a name="xpath31" id="xpath31"></a>XPath 3.1</dt><dd>
+               <a href="https://www.w3.org/TR/xpath-31/">XML Path Language (XPath) 3.1 &#8212; W3C
+                  Recommendation</a>
+            </dd><dt class="label"><a name="xslt30" id="xslt30"></a>XSLT 3.0</dt><dd>
+               <a href="https://www.w3.org/TR/xslt-30/">XSL Transformations (XSLT) Version 3.0 &#8212;
+                  W3C Recommendation</a>
+            </dd><dt class="label"><a name="schematron" id="schematron"></a>ISO Schematron</dt><dd>
+               <a href="https://www.iso.org/standard/85625.html">ISO/IEC 19757-3:2025 &#8212;
+                  Information technology &#8212; Document Schema Definition Languages (DSDL) &#8212; Part 3:
+                  Rule-based validation using Schematron</a>
+            </dd><dt class="label"><a name="xproc31" id="xproc31"></a>XProc 3.1</dt><dd>
+               <a href="https://spec.xproc.org/master/head/xproc/">XProc 3.1: An XML Pipeline
+                  Language &#8212; W3C Community Group Report</a>
+            </dd></dl></div></div></body></html>
