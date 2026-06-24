@@ -4,6 +4,8 @@ This repository holds the specification of **`ai:chat`**, a proposed XPath 3.1
 extension function for invoking AI language models from within XML processing
 pipelines.
 
+📖 **[Read the rendered specification](https://raw.githack.com/oxygenxml-incubator/ai-chat-spec/main/ai-chat-module.html)**
+
 It is written as an **EXPath Candidate Module** and is designed to be:
 
 - **Provider-independent** — the function signature exposes no provider-specific
@@ -71,9 +73,13 @@ preserving the full trace in `?messages`.
 
 ## Contents
 
+- **[Rendered specification (HTML)](https://raw.githack.com/oxygenxml-incubator/ai-chat-spec/main/ai-chat-module.html)**
+  — the readable version of the spec.
 - [`ai-chat-module.xml`](ai-chat-module.xml) — the specification source, in the
-  EXPath/W3C `<spec>` XML format. Render it to HTML with the
-  [EXPath spec-generator](http://expath.org/) (or the W3C xmlspec) toolchain.
+  EXPath/W3C `<spec>` XML format.
+- [`ai-chat-module.html`](ai-chat-module.html) — the HTML generated from the
+  source (viewed through [raw.githack.com](https://raw.githack.com) so it
+  renders instead of showing markup).
 
 ## Status
 
