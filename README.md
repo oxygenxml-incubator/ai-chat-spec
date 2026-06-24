@@ -84,3 +84,8 @@ Feedback and alternative proposals are welcome — please open an issue.
 ## Author
 
 George Bina — Syncro Soft / Oxygen XML Editor.
+
+## License
+
+This specification is licensed under the
+[Creative Commons Attribution 4.0 International (CC BY 4.0)](LICENSE) license.
