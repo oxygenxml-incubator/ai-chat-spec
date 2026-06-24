@@ -121,6 +121,13 @@
                      blocked by host policy (for example, a document excluded by an ignore
                      list).</p>
                </item>
+               <item>
+                  <p><code>ai:error</code> — A general fallback for any failure not covered by a
+                     more specific code above. An implementation MUST report every failure with one
+                     of the codes in this list, using <code>ai:error</code> when no more specific
+                     code applies, so that callers can always rely on a code being present (and, in
+                        <code>'return'</code> mode, on receiving a result map).</p>
+               </item>
             </ulist>
          </div2>
 

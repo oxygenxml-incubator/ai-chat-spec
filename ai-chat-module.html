@@ -106,7 +106,11 @@ div.exampleHeader { font-weight: bold;
                      interpretation exists.</p></li><li><p><code>ai:not-available</code> &#8212; AI functionality is
                      disabled or not configured in the host environment.</p></li><li><p><code>ai:access-denied</code> &#8212; Access to a resource
                      required for the call is blocked by host policy (for example, a document
-                     excluded by an ignore list).</p></li></ul></div><div class="div2">
+                     excluded by an ignore list).</p></li><li><p><code>ai:error</code> &#8212; A general fallback for any failure not covered by a
+                     more specific code above. An implementation MUST report every failure with one
+                     of the codes in this list, using <code>ai:error</code> when no more specific
+                     code applies, so that callers can always rely on a code being present (and, in
+                        <code>'return'</code> mode, on receiving a result map).</p></li></ul></div><div class="div2">
 <h3><a name="intro-design" id="intro-design"></a>1.3 Design goals</h3><ul><li><p><em>Provider independence.</em> The functions do not expose provider-specific
                      parameters in the type signature. Provider selection and authentication are
                      environment configuration, not author code.</p></li><li><p><em>Composability.</em> The <code>?messages</code> array returned by
