@@ -79,25 +79,32 @@ div.exampleHeader { font-weight: bold;
             behind it.</p><div class="div2">
 <h3><a name="intro-ns" id="intro-ns"></a>1.1 Namespace conventions</h3><p>The module defined by this document defines functions in the namespace
                   <code>http://expath.org/ns/ai</code>. In this document, the <code>ai</code>
-               prefix, when used, is bound to this namespace URI.</p><p>Error codes are defined in the namespace <code>http://expath.org/ns/error</code>. In
-               this document, the <code>err</code> prefix, when used, is bound to this namespace
-               URI.</p><p>Example namespace declaration for XSLT:</p><div class="exampleInner"><pre>xmlns:ai="http://expath.org/ns/ai"</pre></div></div><div class="div2">
+               prefix, when used, is bound to this namespace URI.</p><p>Error codes are defined in the same namespace as the functions
+                  (<code>http://expath.org/ns/ai</code>), and use the same <code>ai</code> prefix.
+               They are therefore <em>not</em> in the
+                  <code>http://www.w3.org/2005/xqt-errors</code> namespace, which is reserved for
+               specification-defined errors and for the <code>err:*</code> error-information
+               variables available inside a catch handler.</p><p>Example namespace declaration for XSLT:</p><div class="exampleInner"><pre>xmlns:ai="http://expath.org/ns/ai"</pre></div></div><div class="div2">
 <h3><a name="intro-errors" id="intro-errors"></a>1.2 Error management</h3><p>Error conditions are identified by a QName in the
-                  <code>http://expath.org/ns/error</code> namespace. When an error condition is
+                  <code>http://expath.org/ns/ai</code> namespace. When an error condition is
                reached and <code>on-error</code> is <code>'throw'</code> (the default), a dynamic
                error is raised with the corresponding error code. When <code>on-error</code> is
                   <code>'return'</code>, the same condition is instead reported in the result map
-               through the <code>error</code> and <code>error-code</code> keys (see ).</p><p>Defined error codes:</p><ul><li><p><code>err:AI001</code> &#8212; <em>Backend error.</em> The AI backend returned
+               through the <code>error</code> and <code>error-code</code> keys (see ).</p><p>The error codes are raised in the same namespace as the <code>ai:chat</code> function
+               that was called. An implementation that also exposes <code>ai:chat</code> under an
+               additional, implementation-defined namespace raises the errors in that same
+               namespace, so the same prefix can be used to call the function and to catch its
+               errors.</p><p>Defined error codes:</p><ul><li><p><code>ai:backend-error</code> &#8212; The AI backend returned
                      an error, was unreachable or timed out, or could not produce a completion.
                      This includes the case where the requested model is unavailable; an
-                     implementation MAY raise a more specific error for that case.</p></li><li><p><code>err:AI002</code> &#8212; <em>Invalid argument.</em> The
+                     implementation MAY raise a more specific error for that case.</p></li><li><p><code>ai:invalid-argument</code> &#8212; The
                         <code>$messages</code> sequence is empty or contains an item that cannot be
                      interpreted as a message, or a value in <code>$opts</code> has a type the
                      implementation cannot use. An implementation MAY coerce a reasonable value
                      (for example, the string value of a node or atomic item) rather than raising
-                     this error; it MUST raise <code>err:AI002</code> only when no usable
-                     interpretation exists.</p></li><li><p><code>err:AI003</code> &#8212; <em>AI not available.</em> AI functionality is
-                     disabled or not configured in the host environment.</p></li><li><p><code>err:AI004</code> &#8212; <em>Access denied.</em> Access to a resource
+                     this error; it MUST raise <code>ai:invalid-argument</code> only when no usable
+                     interpretation exists.</p></li><li><p><code>ai:not-available</code> &#8212; AI functionality is
+                     disabled or not configured in the host environment.</p></li><li><p><code>ai:access-denied</code> &#8212; Access to a resource
                      required for the call is blocked by host policy (for example, a document
                      excluded by an ignore list).</p></li></ul></div><div class="div2">
 <h3><a name="intro-design" id="intro-design"></a>1.3 Design goals</h3><ul><li><p><em>Provider independence.</em> The functions do not expose provider-specific
@@ -135,7 +142,7 @@ div.exampleHeader { font-weight: bold;
                   in-place, strings become <code>user</code> maps. The ordering and composition of
                   messages are forwarded to the backend as-is; sequence constraints (such as which
                   role may appear last) are backend-specific and reported via
-                  <code>err:AI001</code>.</p></div><div class="div3">
+                  <code>ai:backend-error</code>.</p></div><div class="div3">
 <h4><a name="chat-param-opts" id="chat-param-opts"></a>3.2.2 <code>$opts</code></h4><p>An optional map of call-level settings. All keys are optional. Unknown keys are
                   silently ignored or reported in <code>?warnings</code> at implementation
                   discretion. Recognised keys:</p><ul><li><p><code>model</code> (<code>xs:string</code>) &#8212; The model or engine
@@ -151,7 +158,7 @@ div.exampleHeader { font-weight: bold;
                         (the default), the implementation may return a cached result for an
                         identical prior call, avoiding redundant API round-trips.</p></li><li><p><code>on-error</code> (<code>xs:string</code>) &#8212; Controls error handling.
                         <code>'throw'</code> (default) raises a dynamic error in the
-                        <code>http://expath.org/ns/error</code> namespace on failure.
+                        <code>http://expath.org/ns/ai</code> namespace on failure.
                         <code>'return'</code> suppresses the dynamic error; the returned map
                         instead carries <code>error</code> and <code>error-code</code> keys
                         describing the failure.</p></li><li><p><code>tools</code> (<code>xs:string?</code>) &#8212; Full tool definitions available
@@ -168,7 +175,7 @@ div.exampleHeader { font-weight: bold;
                      Contains a human-readable description of the failure.</p></li><li><p><code>error-code</code> (<code>xs:string?</code>) &#8212; Present only when
                         <code>on-error</code> is <code>'return'</code> and the call failed.
                      Contains the local name of the error code that would otherwise have been
-                     raised (for example, <code>'AI001'</code>).</p></li><li><p><code>warnings</code> (<code>array(xs:string)</code>) &#8212; Zero or more
+                     raised (for example, <code>'backend-error'</code>).</p></li><li><p><code>warnings</code> (<code>array(xs:string)</code>) &#8212; Zero or more
                      non-fatal diagnostic messages produced during the call. Absent when
                      empty.</p></li></ul></div><div class="div2">
 <h3><a name="chat-tools" id="chat-tools"></a>3.4 Tool and Function Calling</h3><p>The <code>$opts?tools</code> key enables the model to invoke caller-defined
@@ -226,9 +233,9 @@ return if (map:contains($r, 'error'))
                      <code>http://expath.org/ns/ai</code> and make the function
                      <code>ai:chat</code> available under that namespace.</p></li><li><p>MUST accept all message item types described in <a href="#messages"><b>2 Message Format</b></a>. It
                   MAY coerce other items to their string value, and MUST raise
-                     <code>err:AI002</code> when <code>$messages</code> is empty or an item cannot
+                     <code>ai:invalid-argument</code> when <code>$messages</code> is empty or an item cannot
                   be used as a message.</p></li><li><p>MUST return a map with at minimum the <code>response</code> and
-                     <code>messages</code> keys on a successful call.</p></li><li><p>MUST raise <code>err:AI001</code> on an AI backend failure when
+                     <code>messages</code> keys on a successful call.</p></li><li><p>MUST raise <code>ai:backend-error</code> on an AI backend failure when
                      <code>on-error</code> is <code>'throw'</code>, and when <code>on-error</code>
                   is <code>'return'</code> MUST instead return the <code>error</code> and
                      <code>error-code</code> keys.</p></li><li><p>MUST normalise <code>$messages</code> items before dispatching: expand
