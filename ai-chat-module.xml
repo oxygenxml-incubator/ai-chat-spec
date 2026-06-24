@@ -82,28 +82,36 @@
             <head>Error management</head>
             <p>Error conditions are identified by a QName in the
                   <code>http://expath.org/ns/error</code> namespace. When an error condition is
-               reached, a dynamic error is raised with the corresponding error code. The
-               <code>ai:chat</code> function additionally supports a non-throwing error mode
-               controlled by the <code>on-error</code> option key (see <specref
+               reached and <code>on-error</code> is <code>'throw'</code> (the default), a dynamic
+               error is raised with the corresponding error code. When <code>on-error</code> is
+                  <code>'return'</code>, the same condition is instead reported in the result map
+               through the <code>error</code> and <code>error-code</code> keys (see <specref
                   ref="chat-opts"/>).</p>
             <p>Defined error codes:</p>
             <ulist>
                <item>
-                  <p><code>err:AI001</code> — The AI backend returned an error or was unreachable.
-                     Raised when <code>on-error</code> is <code>'throw'</code> (the default).</p>
+                  <p><code>err:AI001</code> — <emph>Backend error.</emph> The AI backend returned
+                     an error, was unreachable or timed out, or could not produce a completion.
+                     This includes the case where the requested model is unavailable; an
+                     implementation MAY raise a more specific error for that case.</p>
                </item>
                <item>
-                  <p><code>err:AI002</code> — A message item in <code>$messages</code> has an
-                     unsupported XPath type (not an <code>xs:string</code>, <code>map(*)</code>,
-                     or <code>array(*)</code>).</p>
+                  <p><code>err:AI002</code> — <emph>Invalid argument.</emph> The
+                        <code>$messages</code> sequence is empty or contains an item that cannot be
+                     interpreted as a message, or a value in <code>$opts</code> has a type the
+                     implementation cannot use. An implementation MAY coerce a reasonable value
+                     (for example, the string value of a node or atomic item) rather than raising
+                     this error; it MUST raise <code>err:AI002</code> only when no usable
+                     interpretation exists.</p>
                </item>
                <item>
-                  <p><code>err:AI003</code> — An option key in <code>$opts</code> has a value of
-                     the wrong type.</p>
+                  <p><code>err:AI003</code> — <emph>AI not available.</emph> AI functionality is
+                     disabled or not configured in the host environment.</p>
                </item>
                <item>
-                  <p><code>err:AI004</code> — The requested model is not available in the current
-                     environment.</p>
+                  <p><code>err:AI004</code> — <emph>Access denied.</emph> Access to a resource
+                     required for the call is blocked by host policy (for example, a document
+                     excluded by an ignore list).</p>
                </item>
             </ulist>
          </div2>
@@ -225,10 +233,11 @@
                   </item>
                   <item>
                      <p><code>on-error</code> (<code>xs:string</code>) — Controls error handling.
-                        <code>'throw'</code> (default) raises a dynamic error (<code>err:AI001</code>)
-                        on failure. <code>'return'</code> suppresses the dynamic error; the
-                        returned map instead carries an <code>error</code> key with a description
-                        of the failure.</p>
+                        <code>'throw'</code> (default) raises a dynamic error in the
+                        <code>http://expath.org/ns/error</code> namespace on failure.
+                        <code>'return'</code> suppresses the dynamic error; the returned map
+                        instead carries <code>error</code> and <code>error-code</code> keys
+                        describing the failure.</p>
                   </item>
                   <item>
                      <p><code>tools</code> (<code>xs:string?</code>) — Full tool definitions available
@@ -259,6 +268,12 @@
                   <p><code>error</code> (<code>xs:string?</code>) — Present only when
                         <code>on-error</code> is <code>'return'</code> and the call failed.
                      Contains a human-readable description of the failure.</p>
+               </item>
+               <item>
+                  <p><code>error-code</code> (<code>xs:string?</code>) — Present only when
+                        <code>on-error</code> is <code>'return'</code> and the call failed.
+                     Contains the local name of the error code that would otherwise have been
+                     raised (for example, <code>'AI001'</code>).</p>
                </item>
                <item>
                   <p><code>warnings</code> (<code>array(xs:string)</code>) — Zero or more
@@ -366,8 +381,10 @@ return if (map:contains($r, 'error'))
                      <code>ai:chat</code> available under that namespace.</p>
             </item>
             <item>
-               <p>MUST accept all message item types described in <specref ref="messages"/> and
-                  raise <code>err:AI002</code> for items of an unsupported XPath type.</p>
+               <p>MUST accept all message item types described in <specref ref="messages"/>. It
+                  MAY coerce other items to their string value, and MUST raise
+                     <code>err:AI002</code> when <code>$messages</code> is empty or an item cannot
+                  be used as a message.</p>
             </item>
             <item>
                <p>MUST return a map with at minimum the <code>response</code> and
@@ -375,9 +392,9 @@ return if (map:contains($r, 'error'))
             </item>
             <item>
                <p>MUST raise <code>err:AI001</code> on an AI backend failure when
-                     <code>on-error</code> is <code>'throw'</code>, and MUST return the
-                     <code>error</code> key instead when <code>on-error</code> is
-                     <code>'return'</code>.</p>
+                     <code>on-error</code> is <code>'throw'</code>, and when <code>on-error</code>
+                  is <code>'return'</code> MUST instead return the <code>error</code> and
+                     <code>error-code</code> keys.</p>
             </item>
             <item>
                <p>MUST normalise <code>$messages</code> items before dispatching: expand
