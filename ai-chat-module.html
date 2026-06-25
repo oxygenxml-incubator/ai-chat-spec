@@ -95,19 +95,19 @@ div.exampleHeader { font-weight: bold;
                that was called. An implementation that also exposes <code>ai:chat</code> under an
                additional, implementation-defined namespace raises the errors in that same
                namespace, so the same prefix can be used to call the function and to catch its
-               errors.</p><p>Defined error codes:</p><ul><li><p><code>ai:backend-error</code> &#8212; The AI backend returned
-                     an error, was unreachable or timed out, or could not produce a completion.
-                     This includes the case where the requested model is unavailable; an
-                     implementation MAY raise a more specific error for that case.</p></li><li><p><code>ai:invalid-argument</code> &#8212; The
-                        <code>$messages</code> sequence is empty or contains an item that cannot be
-                     interpreted as a message, or a value in <code>$opts</code> has a type the
-                     implementation cannot use. An implementation MAY coerce a reasonable value
-                     (for example, the string value of a node or atomic item) rather than raising
-                     this error; it MUST raise <code>ai:invalid-argument</code> only when no usable
-                     interpretation exists.</p></li><li><p><code>ai:not-available</code> &#8212; AI functionality is
-                     disabled or not configured in the host environment.</p></li><li><p><code>ai:access-denied</code> &#8212; Access to a resource
-                     required for the call is blocked by host policy (for example, a document
-                     excluded by an ignore list).</p></li><li><p><code>ai:error</code> &#8212; A general fallback for any failure not covered by a
+               errors.</p><p>Defined error codes:</p><ul><li><p><code>ai:backend-error</code> &#8212; The AI backend returned an error, was
+                     unreachable or timed out, or could not produce a completion. This includes the
+                     case where the requested model is unavailable; an implementation MAY raise a
+                     more specific error for that case.</p></li><li><p><code>ai:invalid-argument</code> &#8212; The <code>$messages</code> sequence is empty
+                     or contains an item that cannot be interpreted as a message, or a value in
+                        <code>$opts</code> has a type the implementation cannot use. An
+                     implementation MAY coerce a reasonable value (for example, the string value of
+                     a node or atomic item) rather than raising this error; it MUST raise
+                        <code>ai:invalid-argument</code> only when no usable interpretation
+                     exists.</p></li><li><p><code>ai:not-available</code> &#8212; AI functionality is disabled or not configured
+                     in the host environment.</p></li><li><p><code>ai:access-denied</code> &#8212; Access to a resource required for the call is
+                     blocked by host policy (for example, a document excluded by an ignore
+                     list).</p></li><li><p><code>ai:error</code> &#8212; A general fallback for any failure not covered by a
                      more specific code above. An implementation MUST report every failure with one
                      of the codes in this list, using <code>ai:error</code> when no more specific
                      code applies, so that callers can always rely on a code being present (and, in
@@ -128,7 +128,10 @@ div.exampleHeader { font-weight: bold;
                   <code>system</code>, <code>user</code>, <code>assistant</code>, and
                      <code>tool</code>. The handling of any other role value is
                   implementation-defined; an implementation MAY map an unrecognised role to
-                     <code>user</code>. The <code>content</code> value is either:</p><ul><li><p>an <code>xs:string</code> &#8212; shorthand for a single <code>text</code> content block; or</p></li><li><p>an <code>array(map(*))</code> of <em>content blocks</em>, for multi-part or multi-modal turns. Each block is a map with a <code>type</code> key (<code>xs:string</code>) and type-specific keys (see <a href="#content-blocks"><b>2.1 Content Blocks</b></a>).</p></li></ul></li><li><p><code>array(*)</code> whose members are message maps as described above &#8212; the
+                     <code>user</code>. The <code>content</code> value is either:</p><ul><li><p>an <code>xs:string</code> &#8212; shorthand for a single <code>text</code> content
+                        block; or</p></li><li><p>an <code>array(map(*))</code> of <em>content blocks</em>, for multi-part
+                        or multi-modal turns. Each block is a map with a <code>type</code> key
+                           (<code>xs:string</code>) and type-specific keys (see <a href="#content-blocks"><b>2.1 Content Blocks</b></a>).</p></li></ul></li><li><p><code>array(*)</code> whose members are message maps as described above &#8212; the
                   array is auto-expanded into individual message items. This allows a
                      <code>?messages</code> array from a prior <code>ai:chat</code> call to be
                   spliced directly into the next call's sequence without further processing.</p></li></ul><p>A <code>tool</code>-role message map additionally carries a <code>tool_call_id</code>
@@ -137,7 +140,18 @@ div.exampleHeader { font-weight: bold;
                <code>tool_calls</code> key containing the serialised JSON from the model response.
             Both extra keys are preserved transparently when the <code>?messages</code> array is
             passed to a subsequent <code>ai:chat</code> call.</p><div class="div2">
-<h3><a name="content-blocks" id="content-blocks"></a>2.1 Content Blocks</h3><p>When a message's <code>content</code> is an <code>array(map(*))</code>, each member map is a content block identified by its <code>type</code> key. Defined block types:</p><ul><li><p><code>map{'type':'text', 'text': xs:string}</code> &#8212; a plain text block. A string <code>content</code> is equivalent to a single block of this type.</p></li><li><p><code>map{'type':'image_url', 'image_url': xs:string}</code> &#8212; an image referenced by URL or data URI, for multi-modal (vision) input.</p></li><li><p><code>map{'type':'reasoning', 'text': xs:string, 'signature': xs:string?}</code> &#8212; a model reasoning / extended-thinking block. The <code>signature</code> is an opaque integrity token returned by the model; it MUST be preserved and passed back unchanged for the reasoning block to remain valid in a subsequent call.</p></li></ul><p>An implementation MAY support additional block types; an unrecognised block type SHOULD be treated as a <code>text</code> block (using its <code>text</code> key) or ignored. In the result, a turn whose content is a single <code>text</code> block is returned with a string <code>content</code> (the simple form); a turn with any other or multiple blocks is returned with an <code>array(map(*))</code> <code>content</code>.</p></div></div><div class="div1">
+<h3><a name="content-blocks" id="content-blocks"></a>2.1 Content Blocks</h3><p>When a message's <code>content</code> is an <code>array(map(*))</code>, each member
+               map is a content block identified by its <code>type</code> key. Defined block
+               types:</p><ul><li><p><code>map{'type':'text', 'text': xs:string}</code> &#8212; a plain text block. A
+                     string <code>content</code> is equivalent to a single block of this type.</p></li><li><p><code>map{'type':'image_url', 'image_url': xs:string}</code> &#8212; an image
+                     referenced by URL or data URI, for multi-modal (vision) input.</p></li><li><p><code>map{'type':'reasoning', 'text': xs:string, 'signature': xs:string?}</code>
+                     &#8212; a model reasoning / extended-thinking block. The <code>signature</code> is an
+                     opaque integrity token returned by the model; it MUST be preserved and passed
+                     back unchanged for the reasoning block to remain valid in a subsequent call.</p></li></ul><p>An implementation MAY support additional block types; an unrecognised block type
+               SHOULD be treated as a <code>text</code> block (using its <code>text</code> key) or
+               ignored. In the result, a turn whose content is a single <code>text</code> block is
+               returned with a string <code>content</code> (the simple form); a turn with any other
+               or multiple blocks is returned with an <code>array(map(*))</code> <code>content</code>.</p></div></div><div class="div1">
 <h2><a name="chat" id="chat"></a>3 The <code>ai:chat</code> Function</h2><p>Sends a conversation to the AI backend and returns a map containing the assistant reply
             and the full updated conversation history.</p><div class="div2">
 <h3><a name="chat-signature" id="chat-signature"></a>3.1 Signature</h3><div class="exampleInner"><pre>ai:chat($messages as item()*, $opts as map(*)?) as map(*)</pre></div></div><div class="div2">
@@ -174,9 +188,10 @@ div.exampleHeader { font-weight: bold;
                         <code>'return'</code>.</p></li><li><p><code>messages</code> (<code>array(map(*))</code>) &#8212; The complete conversation
                      history after this call: all input messages plus the assistant reply appended.
                      Each member is a message map with at minimum <code>role</code> and
-                        <code>content</code> keys (the <code>content</code> being a string or an array of content blocks, per <a href="#content-blocks"><b>2.1 Content Blocks</b></a>). This array may be passed directly as part of the
-                        <code>$messages</code> sequence of a subsequent <code>ai:chat</code> call
-                     to continue the conversation.</p></li><li><p><code>error</code> (<code>xs:string?</code>) &#8212; Present only when
+                        <code>content</code> keys (the <code>content</code> being a string or an
+                     array of content blocks, per <a href="#content-blocks"><b>2.1 Content Blocks</b></a>). This array may
+                     be passed directly as part of the <code>$messages</code> sequence of a
+                     subsequent <code>ai:chat</code> call to continue the conversation.</p></li><li><p><code>error</code> (<code>xs:string?</code>) &#8212; Present only when
                         <code>on-error</code> is <code>'return'</code> and the call failed.
                      Contains a human-readable description of the failure.</p></li><li><p><code>error-code</code> (<code>xs:string?</code>) &#8212; Present only when
                         <code>on-error</code> is <code>'return'</code> and the call failed.
@@ -239,8 +254,8 @@ return if (map:contains($r, 'error'))
                      <code>http://expath.org/ns/ai</code> and make the function
                      <code>ai:chat</code> available under that namespace.</p></li><li><p>MUST accept all message item types described in <a href="#messages"><b>2 Message Format</b></a>. It
                   MAY coerce other items to their string value, and MUST raise
-                     <code>ai:invalid-argument</code> when <code>$messages</code> is empty or an item cannot
-                  be used as a message.</p></li><li><p>MUST return a map with at minimum the <code>response</code> and
+                     <code>ai:invalid-argument</code> when <code>$messages</code> is empty or an
+                  item cannot be used as a message.</p></li><li><p>MUST return a map with at minimum the <code>response</code> and
                      <code>messages</code> keys on a successful call.</p></li><li><p>MUST raise <code>ai:backend-error</code> on an AI backend failure when
                      <code>on-error</code> is <code>'throw'</code>, and when <code>on-error</code>
                   is <code>'return'</code> MUST instead return the <code>error</code> and
