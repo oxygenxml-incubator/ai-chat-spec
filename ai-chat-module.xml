@@ -165,12 +165,23 @@
             </item>
             <item>
                <p><code>map(*)</code> with at least a <code>role</code> key
-                     (<code>xs:string</code>) and a <code>content</code> key
-                     (<code>xs:string</code>). Known role values are
+                     (<code>xs:string</code>) and a <code>content</code> key. Known role values are
                   <code>system</code>, <code>user</code>, <code>assistant</code>, and
                      <code>tool</code>. The handling of any other role value is
                   implementation-defined; an implementation MAY map an unrecognised role to
-                     <code>user</code>.</p>
+                     <code>user</code>. The <code>content</code> value is either:</p>
+               <ulist>
+                  <item>
+                     <p>an <code>xs:string</code> — shorthand for a single <code>text</code> content
+                        block; or</p>
+                  </item>
+                  <item>
+                     <p>an <code>array(map(*))</code> of <emph>content blocks</emph>, for multi-part
+                        or multi-modal turns. Each block is a map with a <code>type</code> key
+                           (<code>xs:string</code>) and type-specific keys (see <specref
+                           ref="content-blocks"/>).</p>
+                  </item>
+               </ulist>
             </item>
             <item>
                <p><code>array(*)</code> whose members are message maps as described above — the
@@ -185,6 +196,34 @@
                <code>tool_calls</code> key containing the serialised JSON from the model response.
             Both extra keys are preserved transparently when the <code>?messages</code> array is
             passed to a subsequent <code>ai:chat</code> call.</p>
+
+         <div2 id="content-blocks">
+            <head>Content Blocks</head>
+            <p>When a message's <code>content</code> is an <code>array(map(*))</code>, each member
+               map is a content block identified by its <code>type</code> key. Defined block
+               types:</p>
+            <ulist>
+               <item>
+                  <p><code>map{'type':'text', 'text': xs:string}</code> — a plain text block. A
+                     string <code>content</code> is equivalent to a single block of this type.</p>
+               </item>
+               <item>
+                  <p><code>map{'type':'image_url', 'image_url': xs:string}</code> — an image
+                     referenced by URL or data URI, for multi-modal (vision) input.</p>
+               </item>
+               <item>
+                  <p><code>map{'type':'reasoning', 'text': xs:string, 'signature': xs:string?}</code>
+                     — a model reasoning / extended-thinking block. The <code>signature</code> is an
+                     opaque integrity token returned by the model; it MUST be preserved and passed
+                     back unchanged for the reasoning block to remain valid in a subsequent call.</p>
+               </item>
+            </ulist>
+            <p>An implementation MAY support additional block types; an unrecognised block type
+               SHOULD be treated as a <code>text</code> block (using its <code>text</code> key) or
+               ignored. In the result, a turn whose content is a single <code>text</code> block is
+               returned with a string <code>content</code> (the simple form); a turn with any other
+               or multiple blocks is returned with an <code>array(map(*))</code> <code>content</code>.</p>
+         </div2>
       </div1>
 
       <div1 id="chat">
@@ -276,9 +315,10 @@
                   <p><code>messages</code> (<code>array(map(*))</code>) — The complete conversation
                      history after this call: all input messages plus the assistant reply appended.
                      Each member is a message map with at minimum <code>role</code> and
-                        <code>content</code> keys. This array may be passed directly as part of the
-                        <code>$messages</code> sequence of a subsequent <code>ai:chat</code> call
-                     to continue the conversation.</p>
+                        <code>content</code> keys (the <code>content</code> being a string or an
+                     array of content blocks, per <specref ref="content-blocks"/>). This array may
+                     be passed directly as part of the <code>$messages</code> sequence of a
+                     subsequent <code>ai:chat</code> call to continue the conversation.</p>
                </item>
                <item>
                   <p><code>error</code> (<code>xs:string?</code>) — Present only when
